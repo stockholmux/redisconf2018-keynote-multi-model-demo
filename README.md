@@ -2,6 +2,8 @@
 
 This is a demo built for RedisConf18 keynote and shows how how Redis can be used as a multi-model database using Search ([RediSearch](https://oss.redislabs.com/redisearch/)), Streams, and Graph ([Redis Graph](https://oss.redislabs.com/redisgraph/)).
 
+Just a note: This is a technology demo, not a reference architecture nor an example of best practices. While it might be possible to create a usable production system out of the ideas presented, it is not hardened in any way. Have fun!
+
 ## Topology
 
 Due to this being a technology demo, many things were in alpha and beta states at time of demo. To combat any stability or conflicts, I used three instances of Redis: Redis Unstable (providing Streams), Redis Stable + RediSearch, and Redis Stable + Redis Graph. There is no reason why you couldn't use one instance of Redis 5.x with RediSearch and Redis Graph, but the scripts are built to accommodate connections to multiple Redis instances.
