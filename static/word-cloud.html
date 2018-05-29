@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,900" rel="stylesheet">
+    <link href="common.css" rel="stylesheet">
+    <title>Word Frequency and Counting</title> 
+    <style>
+      
+
+      .cloud {
+        flex-grow: 4;
+        background-color: rgba(255,255,255,0.5);
+        margin: 0 1em 1em 0em;
+
+      }
+      .grid-container {
+        flex-grow: 3;
+      }
+
+      vaadin-grid, x-cloud-demo {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+      <script src="http://d3js.org/d3.v3.min.js"></script>
+      <script src="d3.layout.cloud.js"></script>
+      <link rel="import" href="bower_components/polymer/polymer-element.html">
+      <link rel="import" href="bower_components/vaadin-ordered-layout/vaadin-horizontal-layout.html">
+      <link rel="import" href="bower_components/vaadin-button/vaadin-button.html">
+      <link rel="import" href="bower_components/vaadin-grid/vaadin-grid.html">
+      <link rel="import" href="bower_components/vaadin-text-field/vaadin-text-field.html">
+
+
+      <link rel="import" href="bower_components/vaadin-lumo-styles/color.html">
+      <link rel="import" href="bower_components/vaadin-lumo-styles/sizing.html">
+      <link rel="import" href="bower_components/vaadin-lumo-styles/spacing.html">
+      <link rel="import" href="bower_components/vaadin-lumo-styles/style.html">
+      <link rel="import" href="bower_components/vaadin-lumo-styles/typography.html">
+      <link rel="import" href="bower_components/polymer/polymer.html">
+      <link rel="import" href="socket-status.html">
+      <custom-style>
+        <style include="lumo-color lumo-typography"></style>
+      </custom-style>
+      
+      <div class="redis-demo-page">
+        <div class="redis-demo-contents">
+          <div class="shift-right subtle"><small>WebSocket Status: <x-socket-status socket="cloudSocket"></x-socket-status></small></div>
+          <h2><img src="/images/redis-oss.png" />Word Frequency</h2>
+          
+          <div class="flex-container">
+            <div class="cloud">
+              <div id="word-cloud"></div>
+            </div>
+            <div class="grid-container">
+              
+              <x-cloud-demo></x-cloud-demo>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      
+      <script>
+        window.cloudSocket = new WebSocket('ws://localhost:4000/wc-top');
+        /* based loosely on the article https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811 */
+        function wordCloud(selector) {
+          var
+            rlColors = function() {
+              return d3.scale.ordinal().range([
+                new d3.rgb(182,36,17),
+                new d3.rgb(53,66,83),
+                new d3.rgb(84,84,84),
+                new d3.rgb(40,157,89),
+                new d3.rgb(202,109,0),
+                new d3.rgb(167,167,167),
+                new d3.rgb(101,146,184),
+                new d3.rgb(230,230,230)
+              ]);
+            },
+            fill = rlColors(),
+            svg = d3.select(selector).append("svg")
+                .attr('width', '100%')
+                .attr('height', '100%')
+                .attr('preserveAspectRatio','xMidYMid meet')
+                .attr('viewBox','0 0 800 800')
+                .append('g')
+                .attr("transform", "translate(400,400)");
+    
+    
+            
+          function draw(words) {
+            var 
+              cloud = svg.selectAll("g text").data(words, function(d) { return d.text; })
+
+            //Entering words
+            cloud.enter()
+              .append('text')
+              .style('font-family', 'Lato')
+              .style('fill', function(d, i) { return fill(i); })
+              .style('font-weight','900')
+              .attr('text-anchor', 'middle')
+              .attr('font-size', 1)
+              .text(function(d) { return d.text; });
+  
+            //Entering and existing words
+            cloud
+              .transition()
+                .duration(300)
+                .style('font-size', function(d) { return d.size + 'px'; })
+                .attr('transform', function(d) {
+                    return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')';
+                })
+                .style('fill-opacity', 1);
+
+            //Exiting words
+            cloud.exit()
+              .transition()
+                .duration(100)
+                .style('fill-opacity', 1e-6)
+                .attr('font-size', 1)
+                .remove();
+          }
+  
+          return {
+            update: function(words) {
+              d3.layout.cloud().size([800, 800])
+                .words(words)
+                .padding(8)
+                .rotate(function() { return ~~(Math.random() * 2) * 90; })
+                .font('Lato')
+                .fontSize(function(d) { return d.size; })
+                .on('end', draw)
+                .start();
+            }
+          }
+    
+        }
+
+    
+        var myWordCloud = wordCloud('#word-cloud');
+    
+      </script>
+
+    
+    <dom-module id="x-cloud-demo">
+        <template preserve-content> 
+          <style>
+          .number-col {
+            text-align: center;
+          }
+          </style>
+          <vaadin-grid theme="row-stripes" style="height:100%" items="[[items]]"> 
+            <vaadin-grid-column flex-grow="2">
+              <template class="header">Word</template>
+              <template>[[item.word]]</template>
+            </vaadin-grid-column>
+            <vaadin-grid-column flex-grow="1" resizable="true">
+              <template class="header"><div class="number-col">Frequency</div></template>
+              <template><div class="number-col">[[item.frequency]]</div></template>
+            </vaadin-grid-column>
+          </vaadin-grid>
+        </template>
+        <script>
+          window.addEventListener('WebComponentsReady', function() {
+            Polymer({
+              is: 'x-cloud-demo',
+              socket : window.cloudSocket,
+              ready: function() { 
+                this.resultCount = 0;
+                this.searchTerm = '';
+                this.items = [];
+                var that = this;
+                let fontBase = 60;
+                that.socket.onopen = function () {
+                  that.socket.onmessage = function(event) {
+                    let allWords = JSON.parse(event.data);
+
+                    let newWords = allWords.map(function(aWord,i) {
+                      return { text : aWord.split('/')[0], size: (allWords.length-i) * 10 };
+                    });
+
+                    myWordCloud.update(newWords);
+                    that.items = allWords
+                      .map(function(wordAndFreq) {
+                        var wordAndFreqArr = wordAndFreq.split('/');
+                        return { word : wordAndFreqArr[0], frequency : wordAndFreqArr[1] };
+                      })
+
+                  };
+                };
+              }
+            });
+          });
+        </script>
+      </dom-module>
+    </body>
+</html>
+

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <title>RediSearch</title> 
+
+  </head>
+  <body>
+    <link rel="import" href="bower_components/polymer/polymer-element.html">
+    <link rel="import" href="bower_components/vaadin-ordered-layout/vaadin-horizontal-layout.html">
+    <link rel="import" href="bower_components/vaadin-button/vaadin-button.html">
+    <link rel="import" href="bower_components/vaadin-grid/vaadin-grid.html">
+    <link rel="import" href="bower_components/vaadin-text-field/vaadin-text-field.html">
+
+
+    <link rel="import" href="bower_components/vaadin-lumo-styles/color.html">
+    <link rel="import" href="bower_components/vaadin-lumo-styles/sizing.html">
+    <link rel="import" href="bower_components/vaadin-lumo-styles/spacing.html">
+    <link rel="import" href="bower_components/vaadin-lumo-styles/style.html">
+    <link rel="import" href="bower_components/vaadin-lumo-styles/typography.html">
+    <link rel="import" href="bower_components/polymer/polymer.html">
+    <link rel="import" href="socket-status.html">
+
+    <link rel="stylesheet" href="common.css">
+    <custom-style>
+      <style include="lumo-color lumo-typography"></style>
+    </custom-style>
+    
+    <style>
+
+
+
+
+    </style>
+    <div class="container">
+        <div class="redis-demo-page">
+          <div class="redis-demo-contents">
+            <div class="shift-right subtle"><small>WebSocket Status: <x-socket-status socket="searchSocket"></x-socket-status></small></div>
+            <h2><img src="/images/redis-oss.png" />RediSearch</h2>
+            <x-search-demo></x-search-demo>
+          </div>
+        </div>
+    </div>
+    <script>
+      var 
+        windowId  = 'id'+Math.floor((Math.random()*10000000)),
+        searchSocket = new WebSocket('ws://localhost:4000/search-results/'+windowId)
+    </script>
+    <dom-module id="x-xlen-count">
+        <template>Stream Length: [[count]]</template>
+        <script>
+          window.addEventListener('WebComponentsReady', function() {
+            Polymer({
+              is: 'x-xlen-count',
+              ready: function() {    
+                let that = this;
+                this.count = 0;
+                var socket = new WebSocket('ws://localhost:4000/stats');
+                socket.onopen = function () {
+                  socket.onmessage = function(event) {
+                    that.count = event.data;
+                  };
+                };
+
+              }
+            });
+          });
+        </script>
+      </dom-module>
+    <dom-module id="x-search-demo">
+      <template preserve-content>
+        <style>
+          .control-bar {
+            background-color: rgba(255,255,255,0.5);
+            padding: 0.5em 1em 0.5em 1em;
+            margin-bottom: 1em;
+          }
+          .shift-right {
+            float: right;
+            padding-top: 0.5em;
+          }
+          
+        </style>
+
+        <div class="control-bar">
+            Search Query: <vaadin-text-field style="width: 20em;" value="[[searchTerm]]" on-keyup="_newSearch"></vaadin-text-field> 
+            <div class="shift-right">Results Found: [[resultCount]]</div>
+        </div>
+        
+
+        <vaadin-grid theme="row-stripes" style="height:400px" items="[[items]]">
+          <vaadin-grid-column flex-grow="1">
+            <template class="header">User</template>
+            <template>[[item.screen_name]]</template>
+          </vaadin-grid-column>
+          <vaadin-grid-column flex-grow="5" resizable="true">
+            <template class="header">Tweet</template>
+            <template>[[item.tweet_text]]</template>
+          </vaadin-grid-column>
+          <vaadin-grid-column flex-grow="2">
+            <template class="header">Mentions</template>
+            <template>
+                <template is="dom-repeat" items="{{item.mentions}}">
+                  <div>[[item]]</div>
+                </template>
+            </template>
+          </vaadin-grid-column>
+          <vaadin-grid-column flex-grow="3">
+              <template class="header">URLS</template>
+              <template>
+                  <template is="dom-repeat" items="{{item.urls}}">
+                    <div>[[item]]</div>
+                  </template>
+              </template>
+            </vaadin-grid-column>
+        </vaadin-grid>
+        
+      </template>
+      <script>
+        window.addEventListener('WebComponentsReady', function() {
+          Polymer({
+            is: 'x-search-demo',
+            _newSearch : function(ev) {
+              let socket = this.socket;
+              if (ev.srcElement.value.length > 1) {
+                socket.send(ev.srcElement.value);
+              } else {
+                this.items = [];
+                this.resultCount = 0;
+              }
+            },
+            socket : searchSocket,
+            ready: function() { 
+              this.resultCount = 0;
+              this.searchTerm = '';
+              this.items = [];
+              var that = this;
+              that.socket.onopen = function () {
+                that.socket.onmessage = function(event) {
+                  var
+                    keys,
+                    asJson;
+                  if (event.data !== 'QUERY SENT') {
+                    that.items = [];
+                    asJson = JSON.parse(event.data,null,2);
+                    keys = Object.keys(asJson);
+                   
+                    that.resultCount = asJson.totalResults.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    keys.forEach(function(aKey) {
+                      if (aKey.match(/^docid\-/g)) {
+                        if (asJson[aKey].mentions) {
+                          asJson[aKey].mentions = asJson[aKey].mentions.split(',');
+                        }
+                        if (asJson[aKey].urls) {
+                          asJson[aKey].urls = asJson[aKey].urls.split(',');
+                        }
+                        console.log(asJson[aKey]);
+                        that.push('items',asJson[aKey]);
+                      }
+                    });
+                  }
+                };
+              };
+              
+            }
+          });
+        });
+      </script>
+    </dom-module>
+  </body>
+</html>
+
+

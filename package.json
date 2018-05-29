@@ -1,0 +1,24 @@
+{
+  "name": "redisconf2018-keynote-multimodel",
+  "version": "1.0.0",
+  "description": "Keynote Demo (Multi Model Redis) from RedisConf 2018",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kyle J Davis",
+  "license": "MIT",
+  "dependencies": {
+    "async": "^2.6.1",
+    "emoji-regex": "^6.5.1",
+    "eventemitter2": "^5.0.1",
+    "express": "^4.16.3",
+    "express-ws": "^3.0.0",
+    "lodash": "^4.17.10",
+    "node-tweet-stream": "^2.0.3",
+    "redis": "^2.8.0",
+    "stopword": "^0.1.10",
+    "yargs": "^11.0.0",
+    "redisearchclient": "https://github.com/stockholmux/RediSearchClient"
+  }
+}

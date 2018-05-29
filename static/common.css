@@ -1,0 +1,44 @@
+html { font-family: 'Lato', sans-serif; }
+.redis-demo-page h1,
+.redis-demo-page h2,
+.redis-demo-page h3,
+.redis-demo-page h4,
+.redis-demo-page h5 {
+  color: rgba(84,84,84,0.9);
+}
+html {
+  background: url(/images/bg-poly-white-1.jpg)  no-repeat center center fixed;
+  background-size: cover;
+}
+.redis-demo-page, .flex-container {
+  display: flex;
+  flex-direction: row;
+}
+.redis-demo-page {
+  justify-content: center;
+}
+.redis-demo-contents {
+  flex-grow: 1;
+  max-width: 80%;
+}
+.redis-demo-page h2 {
+  font-weight: 400;
+  font-family: 'Lato', sans-serif;
+}
+h2 img {
+  width: auto;
+  height: 1.4em;
+  vertical-align: text-top;
+  margin-right: 0.4em;
+  margin-left: 0.4em;
+}
+.subtle {
+  color: rgb(167,167,167);
+}
+.shift-right {
+  float: right;
+}
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

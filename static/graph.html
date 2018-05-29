@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <title>Redis Graph</title>
+  </head>
+  <body>
+    <link rel="import" href="bower_components/polymer/polymer-element.html">
+    <link rel="import" href="bower_components/vaadin-ordered-layout/vaadin-horizontal-layout.html">
+    <link rel="import" href="bower_components/vaadin-button/vaadin-button.html">
+    <link rel="import" href="bower_components/vaadin-text-field/vaadin-text-field.html">
+    <link rel="import" href="bower_components/vaadin-tabs/vaadin-tabs.html">
+    <link rel="import" href="bower_components/vaadin-grid/vaadin-grid.html">
+
+
+    <link rel="import" href="bower_components/vaadin-lumo-styles/color.html">
+    <link rel="import" href="bower_components/vaadin-lumo-styles/sizing.html">
+    <link rel="import" href="bower_components/vaadin-lumo-styles/spacing.html">
+    <link rel="import" href="bower_components/vaadin-lumo-styles/style.html">
+    <link rel="import" href="bower_components/vaadin-lumo-styles/typography.html">
+    <link rel="import" href="bower_components/polymer/polymer.html">
+    
+    <link href="common.css" rel="stylesheet">
+
+
+    <custom-style>
+      <style include="lumo-color lumo-typography"></style>
+    </custom-style>
+    <style>
+      .demo-contents {
+        background-color: rgba(255,255,255,0.5);
+      }
+      .svg-container {
+        justify-content: center;
+        display: flex;
+      }
+      .list-container {
+        flex: 1;
+      }
+    </style>
+
+    <dom-module id="x-graph-data">
+      <template>
+        <vaadin-grid theme="row-stripes" style="height:400px" items="[[items]]">
+          <vaadin-grid-column flex-grow="1">
+            <template>[[item.id]]</template>
+          </vaadin-grid-column>
+        </vaadin-grid>
+      </template>
+      <script>
+      window.addEventListener('WebComponentsReady', function() {
+          Polymer({
+            is: 'x-graph-data',
+
+            ready: function() { 
+              var that = this;
+              socket.addEventListener('message',function(ev) {
+                if (ev.data !== 'QUERY SENT') {
+                  that.items = JSON.parse(ev.data).results.nodes;
+                }
+                
+              });
+            }
+          })
+        });
+      </script>
+    </dom-module>
+    <dom-module id="x-graph-demo">
+      <template preserve-content>
+        <style>
+          .controls {
+            padding: 0.5em 1em;
+          }
+        </style>
+        <div class="controls">
+          <vaadin-button on-click="_recenter" >Recenter</vaadin-button>
+
+          <vaadin-button on-click="_allClick" >All</vaadin-button>
+          Graph Query: 
+          <vaadin-text-field value="{{searchTerm2}}"></vaadin-text-field> 
+          ➟
+          <vaadin-text-field value="{{searchTerm}}"></vaadin-text-field> 
+
+          <vaadin-button on-click="_newSearch" >Search</vaadin-button>
+        </div>
+        <vaadin-tabs>
+          <vaadin-tab on-click="_zoom" data-zoom-level="0.075">Min</vaadin-tab>
+          <vaadin-tab on-click="_zoom" data-zoom-level="0.25">&middot;</vaadin-tab>
+          <vaadin-tab on-click="_zoom" data-zoom-level="0.5">&middot;</vaadin-tab>
+          <vaadin-tab on-click="_zoom" data-zoom-level="0.75">&middot;</vaadin-tab>
+          <vaadin-tab on-click="_zoom" data-zoom-level="1">Normal</vaadin-tab>
+          <vaadin-tab on-click="_zoom" data-zoom-level="1.25">&middot;</vaadin-tab>
+          <vaadin-tab on-click="_zoom" data-zoom-level="1.5">&middot;</vaadin-tab>
+          <vaadin-tab on-click="_zoom" data-zoom-level="1.75">&middot;</vaadin-tab>
+          <vaadin-tab on-click="_zoom" data-zoom-level="2">Max</vaadin-tab>
+        </vaadin-tabs>
+      </template>
+      <script>
+        window.addEventListener('WebComponentsReady', function() {
+          //var 
+          //  windowId  = 'id'+Math.floor((Math.random()*10000000));
+          Polymer({
+            is: 'x-graph-demo',
+            _allClick   : function() {
+              this.searchTerm ='';
+              this.searchTerm2 = '';
+              socket.send('{}');
+            },
+            _recenter   : function() {
+              zoom.translateTo(svg.transition().duration(200), width/2, height/2)
+            },
+            _zoom : function(ev) {
+              zoom.scaleTo(svg.transition().duration(100), +ev.srcElement.dataset.zoomLevel);
+            },
+            _newSearch : function(ev) {
+              if ((+this.searchTerm.length > 2) || (this.searchTerm2.length > 2)) {
+                var graphObj = {};
+                if (this.searchTerm) {
+                  graphObj.l1 = this.searchTerm;
+                }
+                if (this.searchTerm2) {
+                  graphObj.l2 = this.searchTerm2;
+                }
+                socket.send(JSON.stringify(graphObj));
+              }
+            },
+            ready: function() { 
+              console.log('x-graph-demo ready');
+            }
+          });
+        });
+      </script>
+    
+    </dom-module>
+    <div class="redis-demo-page">
+      <div class="redis-demo-contents">
+          <h2><img src="/images/redis-oss.png" />Graph</h2>
+            
+          <div class="demo-contents">
+            <x-graph-demo></x-graph-demo>
+            <div class="svg-container">
+                <svg width="960" height="500"></svg>
+                <div class="list-container">
+                  <x-graph-data></x-graph-data>
+
+                </div>
+                
+            </div>
+          </div>
+      </div>
+    </div>
+    
+    <script>
+          var zLevel = 0.075;
+
+          var svg = d3.select("svg"),
+              width = +svg.attr("width"),
+              height = +svg.attr("height"),
+              color = d3.scaleOrdinal(d3.schemeCategory10);
+          
+          var 
+              nodes = [],
+              links = [];
+          
+          var simulation = d3.forceSimulation(nodes)
+              .force("charge", d3.forceManyBody().strength(-1000))
+              .force("link", d3.forceLink(links).distance(200))
+              .force("x", d3.forceX())
+              .force("y", d3.forceY())
+              //.alphaTarget(10)
+              .on("tick", ticked);
+          
+          var tX = width / 2,
+              tY = height / 2,
+              g     = svg.append("g").attr("transform", "translate(" + width / 2 + "," + height / 2 + ") scale(0.05)"),
+              link  = g.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link"),
+              node  = g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node"),
+              texts = g.append('g').attr('class','texts'),
+              textEls = texts.selectAll('text').data(nodes, function (node) { return node.id });
+          //add zoom capabilities 
+
+          function zoomed(){
+            g.attr("transform", d3.event.transform);
+          }
+          var zoom = d3.zoom().on('zoom',zoomed);
+          svg.call(zoom).call(zoom.transform, d3.zoomIdentity.translate(width / 2, height / 2).scale(zLevel));
+
+
+          let windowId  = 'id'+Math.floor((Math.random()*10000000));
+          let socket = new WebSocket('ws://localhost:4000/graph/'+windowId);
+          socket.onopen = function () {
+          
+            restart();
+            socket.onmessage = function(event) {
+              if (event.data !== 'QUERY SENT') {
+                var
+                  eventData = JSON.parse(event.data), 
+                  nodesAsObj = {};
+                
+                eventData.results.nodes.forEach(function(aNode) {
+                  nodesAsObj[aNode.id] = aNode;
+                });
+          
+                links = eventData.results.links.map(function(e) {
+                  return { source : nodesAsObj[e.source], target : nodesAsObj[e.target] };
+                });
+          
+          
+                nodes = eventData.results.nodes;
+          
+                textEls = texts.selectAll('text').data(nodes, function (node) { return node.id })
+                
+          
+                
+                //.attr('x', function (node) { return node && node.x }).attr('y', function (node) { return node && node.y });
+                textEls.exit().remove()
+                var textEnter = textEls
+                    .enter()
+                    .append('text')
+                    .text(function (node) { return node.id })
+                    .attr('font-size', 15);
+          
+                textEls = textEnter.merge(textEls)
+          
+                restart();
+              }
+            }
+          };
+          
+          function restart() {
+          
+            // Apply the general update pattern to the nodes.
+            node = node.data(nodes, function(d) { return d.id;});
+            node.exit().remove();
+            node = node.enter().append("circle").attr("fill", function(d) { return color(d.id); }).attr("r", 8).merge(node);
+          
+          
+          
+            // Apply the general update pattern to the links.
+            link = link.data(links, function(d) { return d.source.id + "-" + d.target.id; });
+            link.exit().remove();
+            link = link.enter().append("line").merge(link);
+          
+            // Update and restart the simulation.
+            simulation.nodes(nodes);
+            simulation.force("link").links(links);
+            simulation.alpha(1).restart();
+            simulation.alphaDecay(0.15);
+          }
+          
+          function ticked() {
+            node.attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+            
+            textEls
+              .attr('dx',function(d) { return d && d.x-25; })
+              .attr('dy',function(d) { return d && d.y+25; })
+            //texts.attr('dx',function(d) { console.log(d); });
+          
+            link.attr("x1", function(d) { return d.source.x; })
+                .attr("y1", function(d) { return d.source.y; })
+                .attr("x2", function(d) { return d.target.x; })
+                .attr("y2", function(d) { return d.target.y; });
+          }
+          
+    </script>
+  </body>
+</html>

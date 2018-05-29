@@ -1,0 +1,30 @@
+<dom-module id="x-socket-status">
+  <template>[[status]]</template>
+  <script>
+    window.addEventListener('WebComponentsReady', function() {
+      Polymer({
+        is: 'x-socket-status',
+        ready: function() {
+          var 
+            that = this,
+            statusChange,
+            statuses = ['Connecting','Ready','Closing','Closed'],
+            socketName;
+          that.status = 'Establishing...';
+          statusChange = function() {
+            console.log('statusChange',window[socketName].readyState);
+            that.status = statuses[window[socketName].readyState];
+          }
+          if (this.hasAttribute('socket')) {
+            socketName = this.getAttribute('socket');
+
+            window[socketName].addEventListener('error',statusChange);
+
+            window[socketName].addEventListener('open',statusChange);
+            window[socketName].addEventListener('close',statusChange);
+          }
+        }
+      });
+    });
+  </script>
+</dom-module>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redis: Multi-model database</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jointjs/2.0.1/joint.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.5/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.3.3/backbone-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jointjs/2.0.1/joint.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/snap.svg/0.5.1/snap.svg-min.js"></script>
+    <script src="control-panel.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,900" rel="stylesheet">
+    <link href="common.css" rel="stylesheet">
+    <style>
+        .link-tools,.marker-arrowheads {
+          display: none;
+        }
+        .connection {
+          stroke-dasharray: 0;
+        }
+        .connection[data-active="1"] {
+          stroke-dasharray: 20;
+          stroke : #b62411
+        }
+        .connection[data-active="1"][data-special="twitter"] {
+          stroke : #33aaf3;
+          stroke-dasharray: 40;
+        }
+        .connection[data-constant-active][data-active="1"] {
+          stroke : #6cc24a;
+          stroke-dasharray: 4, 20;
+        }
+        .joint-paper {
+          position: static;
+        }
+        #jointctlpanel {
+          position: relative;
+          width: 100%;
+          padding-top: 41%;
+          background-color: rgba(255,255,255,0.5);
+        }
+        #jointctlpanel.joint-paper > svg {
+          top: 1em;
+          left: 1em;
+          right: 1em;
+          bottom: 1em;
+        }
+        rect[data-enabled="disconnect"] {
+          filter: url(#matrix);
+        }
+        rect[data-enabled="off"] {
+          filter: url(#luminanceToAlpha);
+        }
+        .pres-links {
+          padding-top: 3em;
+        }
+    </style>
+</head>
+<body>
+  <div class="redis-demo-page">
+    <div class="redis-demo-contents">
+        <h2><img src="/images/redis-oss.png" />Multi Model</h2>
+        <div id="jointctlpanel"></div>
+        <div class="pres-links">
+            <div><a target="_blank" href="word-cloud.html">Count</a> / <a target="_blank" href="search.html">Search</a> / <a target="_blank" href="graph.html">Graph</a></div>
+        </div>
+    </div>
+  </div>
+
+  <svg>
+    <filter id="luminanceToAlpha">
+      <feColorMatrix in="SourceGraphic" type="luminanceToAlpha" />
+    </filter>
+    <filter id="matrix">
+      <feColorMatrix in="SourceGraphic" type="matrix" 
+        values="0 1.0 0 0 0
+                0 1.0 0 0 0
+                0 0.6 1 0 0 
+                0 0   0 1 0" />
+    </filter>
+  </svg>
+</body>
+</html>
