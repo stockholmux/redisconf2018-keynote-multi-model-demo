@@ -15,26 +15,8 @@ local function create_interaction(user,tweetId)
 end
 
 
-
-
---local user1_exists = redis.call('graph.query', KEYS[1], user_exists_query(ARGV[1]));
---local user2_exists = redis.call('graph.query', KEYS[1], user_exists_query(ARGV[2]));
-
 local status = {};
 
---if (isempty(user1_exists[1][2])) then
---  table.insert(status,redis.call('graph.query', KEYS[1], create_user(ARGV[1])))
---else
---  table.insert(status,"")
---end 
-
---if (isempty(user2_exists[1][2])) then
---  table.insert(status,redis.call('graph.query', KEYS[1], create_user(ARGV[2])))
---else
---  table.insert(status,"")
---end
-
---table.insert(status,create_tweet(ARGV[3]));
 local argv_count = 0;
 local mention_count = 1;
 local create_count = 0;
@@ -71,12 +53,6 @@ table.insert(status, 'created');
 table.insert(status, create_count);
 table.insert(status, 'interactions');
 table.insert(status, interactions);
-
-
-
-
-
-
 
 
 return status;
